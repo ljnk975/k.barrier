@@ -63,13 +63,13 @@ public class WBG {
 		this.buildWBG();
 
 		// Print WBG
-		System.out.println("WBG: ");
-		for (int i = 0; i < wbg.length; i++) {
-			System.out.print("[");
-			for (int j = 0; j < wbg.length; j++)
-				System.out.format("%2d, ", wbg[i][j]);
-			System.out.println("]");
-		}
+//		System.out.println("WBG: ");
+//		for (int i = 0; i < wbg.length; i++) {
+//			System.out.print("[");
+//			for (int j = 0; j < wbg.length; j++)
+//				System.out.format("%2d, ", wbg[i][j]);
+//			System.out.println("]");
+//		}
 	}
 
 	/**
@@ -122,6 +122,16 @@ public class WBG {
 	}
 
 	/**
+	 * Get weight from node i and j
+	 * @param ni
+	 * @param nj
+	 * @return
+	 */
+	public int getWeight(int ni, int nj) {
+		return getWeight(getNode(ni), getNode(nj));
+	}
+
+	/**
 	 * Get the neighbour of the node
 	 * @param s node s
 	 * @return
@@ -145,6 +155,14 @@ public class WBG {
 		if (s.index == 0 || s.index == 1)
 			return;
 		s.removed = true;
+	}
+
+	/**
+	 * Set all sensor unremoved
+	 */
+	public void reset() {
+		for (Node s : nodes)
+			s.removed = false;
 	}
 
 	/**
