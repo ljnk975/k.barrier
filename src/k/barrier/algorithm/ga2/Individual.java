@@ -1,4 +1,4 @@
-package k.barrier.algorithm.ga;
+package k.barrier.algorithm.ga2;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +28,11 @@ public class Individual {
 	public int[] genes;
 
 	/**
+	 * K vi tri k barrier
+	 */
+	public int[] k;
+
+	/**
 	 * Current fitness
 	 */
 	public int fitness;
@@ -39,19 +44,23 @@ public class Individual {
 
 	protected Individual(Algorithm alg) {
 		this.alg  = alg;
-		this.size = alg.getInput().getListSensor().size()+alg.getInput().getK();
+		this.size = alg.getInput().getListSensor().size();
 		this.fitness = -1;
 	}
 
-	public Individual(Algorithm alg, int[] genes) {
+	public Individual(Algorithm alg, int[] genes, int[] k) {
 		this(alg);
 		this.genes = genes;
+		this.k = k;
 	}
 
 	@Override
 	public String toString() {
 		StringBuilder buff = new StringBuilder();
-		buff.append(this.fitness+" genes=[");
+		buff.append(this.fitness+" k=[");
+		for (int i = 0; i < this.k.length-1; i++)
+			buff.append(this.k[i]+", ");
+		buff.append(this.k[this.k.length-1]+"] genes=[");
 		for (int i = 0; i < this.genes.length-1; i++)
 			buff.append(this.genes[i]+", ");
 		buff.append(this.genes[this.genes.length-1]+"]");
@@ -59,28 +68,36 @@ public class Individual {
 	}
 
 	public static Individual random(Algorithm alg) {
-		int[] genes = new int[alg.getInput().getListSensor().size()+alg.getInput().getK()];
+		int[] genes = new int[alg.getInput().getListSensor().size()];
+		int[] ks = new int[alg.getInput().getK()+1];
 
-		int nk = 0;
-		boolean[] selected = new boolean[alg.getInput().getListSensor().size()];
 		for (int gi = 0; gi < genes.length; gi++) {
 			int next = -1;
+			loop1:
 			while(true) {
-				next = RandomUtil.nextInt(alg.getInput().getListSensor().size()+1)+1;
-				if (next == 1) {
-					if (nk < alg.getInput().getK()) {
-						nk++;
-						break;
-					}
-				} else if (!selected[next-2]) {
-					selected[next-2] = true;
-					break;
-				}
+				next = RandomUtil.nextInt(genes.length);
+				for (int j = 0; j < gi; j++)
+					if (genes[j] == next)
+						continue loop1;
+				break;
 			}
 			genes[gi] = next;
 		}
 
-		return new Individual(alg, genes);
+		WBG wbg = alg.getInput().getWBG();
+		int ki = 1, g = 0;
+		for (int gi = 0; gi < genes.length; gi++) {
+			if (ki >= ks.length)
+				break;
+			if (wbg.getWeight(g, 1) < wbg.getWeight(g, genes[gi]))
+				ks[ki++] = gi;
+			g = genes[gi];
+		}
+
+		for (; ki < ks.length; ki++)
+			ks[ki] = ks[ki-1]+RandomUtil.nextInt(genes.length+1-ks[ki-1]);
+		
+		return new Individual(alg, genes, ks);
 	}
 
 	public static Individual greedy(Algorithm alg, boolean remove) {
@@ -104,43 +121,37 @@ public class Individual {
 
 		d.getWBG().reset();
 
-		int[] genes = new int[alg.getInput().getListSensor().size()+alg.getInput().getK()];
+		int[] genes = new int[alg.getInput().getListSensor().size()];
+		int[] ks = new int[alg.getInput().getK()+1];
 
-		int gi = 0;
-
-		int nk = 0;
-		boolean[] selected = new boolean[alg.getInput().getListSensor().size()];
+		int gi = 0, ki = 1;
 
 		for (List<Node> path : list) {
 			for (Node s : path) {
-				if (s.index == 0)
-					continue;
-				if (s.index == 1)
-					nk++;
-				else
-					selected[s.index-2] = true;
+				if (s.index == 0 || s.index == 1)
+					continue; 
 				genes[gi++] = s.index;
 			}
+			ks[ki] = ks[ki-1]+path.size()-2; ki++;
 		}
 
 		for (; gi < genes.length; gi++) {
 			int next = -1;
+			loop1:
 			while(true) {
-				next = RandomUtil.nextInt(alg.getInput().getListSensor().size()+1)+1;
-				if (next == 1) {
-					if (nk < alg.getInput().getK()) {
-						nk++;
-						break;
-					}
-				} else if (!selected[next-2]) {
-					selected[next-2] = true;
-					break;
-				}
+				next = RandomUtil.nextInt(genes.length);
+				for (int j = 0; j < gi; j++)
+					if (genes[j] == next)
+						continue loop1;
+				break;
 			}
 			genes[gi] = next;
 		}
 
-		return new Individual(alg, genes);
+		for (; ki < ks.length; ki++)
+			ks[ki] = ks[ki-1];
+		
+		return new Individual(alg, genes, ks);
 	}
 
 	protected void obtainKBarrier() {
@@ -149,14 +160,13 @@ public class Individual {
 
 		this.barriers = new Barrier[d.getK()];
 
-		for (int i = 0, j = 0; i < d.getK(); i++) {
+		for (int i = 0; i < d.getK(); i++) {
 			List<Node> path = new ArrayList<>(); path.add(wbg.getNode(0));
 
-			while(genes[j] != 1) {
-				path.add(wbg.getNode(genes[j])); j++;
-			}
+			for (int j = k[i]; j < k[i+1]; j++)
+				path.add(wbg.getNode(genes[j]));
 
-			path.add(wbg.getNode(1)); j++;
+			path.add(wbg.getNode(1));
 
 			barriers[i] = wbg.barrierFromPath(path);
 
