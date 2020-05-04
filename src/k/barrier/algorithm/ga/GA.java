@@ -10,21 +10,22 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import k.barrier.algorithm.Algorithm;
+import k.barrier.data.WBG.Node;
 import k.barrier.util.RandomUtil;
 
 public class GA extends Algorithm {
 
 	public GA() {
-		super("GA3");
+		super("GA1");
 	}
 
 	protected List<Individual> init() {
 		List<Individual> population = new ArrayList<Individual>();
-//		int i = 0;
-		int i = 1;
-		population.add(Individual.greedy(this, false));
-		for (; i < POPNUM/20; i++)
-			population.add(Individual.greedy(this, true));
+		int i = 0;
+//		int i = 1;
+//		population.add(Individual.greedy(this, false));
+//		for (; i < POPNUM/20; i++)
+//			population.add(Individual.greedy(this, true));
 		for (; i < POPNUM; i++)
 			population.add(Individual.random(this));
 		return population;
@@ -84,23 +85,54 @@ public class GA extends Algorithm {
 		return new Individual(this, genes);
 	}
 
-	// TODO: dot bien chua thuc su tot
 	protected Individual mutation(Individual ind) {
 		// Dot bien
+		ind.callFitness();
+
+		// Diem dot bien
+		int k = RandomUtil.nextInt(ind.size);
+
+		for (int i = 0; i < k; i++)
+			d.getWBG().remove(d.getWBG().getNode(ind.genes[i]));
+
+		// 
+		List<Node> list = d.getWBG().dijkstra();
+		
+		d.getWBG().reset();
+
 		int[] genes = new int[ind.size];
 
-		int j;
+		// Copy first
+		int nk = 1, gi = 0, ki = 0;
+		boolean[] selected = new boolean[d.getListSensor().size()];
 
-		// Copy of ind
-		for (j = 0; j < ind.size; j++)
-			genes[j] = ind.genes[j];
+		for (Node s : list) {
+			if (s.index == 0)
+				continue;
+			genes[gi++] = s.index;
+			if (s.index != 1)
+				selected[s.index-2] = true;
+		}
 
-		// Make mutation
-		int p1 = RandomUtil.nextInt(genes.length-1), p2 = p1+1+RandomUtil.nextInt(genes.length-p1-1);
-		int temp = genes[p1];
-		genes[p1] = genes[p2];
-		genes[p2] = temp;
+		while (gi < ind.size) {
+			int next = -1;
 
+			while(true) {
+				next = ind.genes[ki]; ki = (ki+1)%ind.size;
+				if (next == 1) {
+					if (nk < d.getK()) {
+						nk++;
+						break;
+					}
+				} else if (!selected[next-2]) {
+					selected[next-2] = true;
+					break;
+				}
+			}
+
+			genes[gi++] = next;
+		}
+		
 		return new Individual(this, genes);
 	}
 

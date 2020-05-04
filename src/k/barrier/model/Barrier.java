@@ -46,6 +46,20 @@ public class Barrier {
 	}
 
 	/**
+	 * @return the path
+	 */
+	public List<Sensor> getPath() {
+		return path;
+	}
+
+	/**
+	 * @param path the path to set
+	 */
+	public void setPath(List<Sensor> path) {
+		this.path = path;
+	}
+
+	/**
 	 * Get the index-th Sensor
 	 * @param index index of sensor
 	 * @return the sensor

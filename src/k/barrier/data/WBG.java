@@ -101,6 +101,13 @@ public class WBG {
 	}
 
 	/**
+	 * @return the size
+	 */
+	public int getSize() {
+		return size;
+	}
+
+	/**
 	 * Get the i-th node
 	 * @param index i
 	 * @return
