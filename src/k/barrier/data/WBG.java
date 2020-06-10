@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import k.barrier.model.Barrier;
 import k.barrier.model.Sensor;
@@ -35,7 +36,7 @@ public class WBG {
 	/**
 	 * List of node
 	 */
-	private Node[] nodes;
+	private List<Node> nodes;
 
 	// Node 
 	public static class Node {
@@ -48,9 +49,6 @@ public class WBG {
 			this.index = index;
 		}
 
-	}
-
-	private WBG() {
 	}
 
 	/**
@@ -81,13 +79,13 @@ public class WBG {
 		size = d.getListSensor().size()+2;
 
 		// List of node
-		nodes = new Node[size];
+		nodes = new ArrayList<Node>();
 
 		// Build node
 		for (int i = 0; i < size; i++) {
 			Node node = new Node(i);
 			node.s = i == 0 ? Sensor.s : i == 1 ? Sensor.t : d.getListSensor().get(i-2);
-			nodes[i] = node;
+			nodes.add(node);
 		}
 		
 		// The wbg
@@ -96,7 +94,7 @@ public class WBG {
 		// Build wbg
 		for (int i = 0; i < size; i++) {
 			for (int j = i; j < size; j++)
-				this.wbg[j][i] = this.wbg[i][j] = Distance.w(nodes[i].s, nodes[j].s, d.getL(), d.getLr(), d.isWeak());
+				this.wbg[j][i] = this.wbg[i][j] = Distance.w(nodes.get(i).s, nodes.get(j).s, d.getL(), d.getLr(), d.isWeak());
 		}
 	}
 
@@ -113,7 +111,7 @@ public class WBG {
 	 * @return
 	 */
 	public Node getNode(int index) {
-		return nodes[index];
+		return nodes.get(index);
 	}
 
 	/**
@@ -144,14 +142,7 @@ public class WBG {
 	 * @return
 	 */
 	private List<Node> neighbours(Node s) {
-		List<Node> list = new ArrayList<Node>();
-
-		for (int i = 0; i < size; i++) {
-			if (!nodes[i].removed)
-				list.add(nodes[i]);
-		}
-
-		return list;
+		return nodes.stream().filter(s1 -> !s1.removed).collect(Collectors.toList());
 	}
 
 	/**
@@ -164,12 +155,26 @@ public class WBG {
 		s.removed = true;
 	}
 
+	public void reset(Node s) {
+		if (s.index == 0 || s.index == 1)
+			return;
+		s.removed = false;
+	}
+
 	/**
 	 * Set all sensor unremoved
 	 */
 	public void reset() {
 		for (Node s : nodes)
 			s.removed = false;
+	}
+
+	/**
+	 * Get the list of direct sensor
+	 */
+	public List<Node> getNodeIntersetList(int s) {
+		Node sx = getNode(s);
+		return nodes.stream().filter(s1 -> s1.index != 0 && s1.index != 1 && getWeight(sx, s1) == 0).collect(Collectors.toList());
 	}
 
 	/**
@@ -209,7 +214,7 @@ public class WBG {
 			u = null;
 			for (i = 0; i < size; i++) {
 				if (label[i] && (u == null || dist[i] < dist[u.index]))
-					u = nodes[i];
+					u = nodes.get(i);
 			}
 
 			if (u == null || dist[u.index] == Double.MAX_VALUE)
@@ -230,12 +235,25 @@ public class WBG {
 		}
 
 		List<Node> path = new LinkedList<Node>();
-		u = nodes[1];
+		u = nodes.get(1);
 		
 		do {
-			path.add(0, u); u = nodes[prev[u.index]];
+			path.add(0, u); u = nodes.get(prev[u.index]);
 		} while (u.index != 0);
-		path.add(0, nodes[0]);
+		path.add(0, nodes.get(0));
+
+		return path;
+	}
+
+	public List<Node> dijkstra(List<Node> net) {
+		for (Node s : nodes)
+			remove(s);
+		for (Node s : net)
+			reset(s);
+
+		List<Node> path = dijkstra();
+		
+		reset();
 
 		return path;
 	}
@@ -243,7 +261,7 @@ public class WBG {
 	public Barrier directBarrier() {
 		List<Sensor> list = new ArrayList<Sensor>();
 		list.add(Sensor.s); list.add(Sensor.t);
-		return new Barrier(list, getWeight(nodes[0], nodes[1]));
+		return new Barrier(list, getWeight(nodes.get(0), nodes.get(1)));
 	}
 
 	public Barrier barrierFromPath(List<Node> path) {
@@ -254,14 +272,6 @@ public class WBG {
 			Node t = it.next(); list.add(t.s); length += getWeight(s, t); s = t;
 		}
 		return new Barrier(list, length);
-	}
-
-	public WBG transform(List<List<Node>> list) {
-		return new WBG();
-	}
-
-	public List<List<Node>> pathUpdate(List<List<Node>> list, List<Node> np) {
-		return null;
 	}
 
 }

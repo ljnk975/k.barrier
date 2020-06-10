@@ -203,8 +203,8 @@ public class Data implements IDraw {
 
 			d.L  = in.nextInt();
 			d.H  = in.nextInt();
-			d.k  = in.nextInt();
 			d.lr = in.nextDouble();
+			d.k = in.nextInt();
 			d.listSensor = new ArrayList<Sensor>();
 
 			int nSensor = in.nextInt();
@@ -212,8 +212,10 @@ public class Data implements IDraw {
 				double x = in.nextDouble();
 				double y = in.nextDouble();
 				double r = in.nextDouble();
+				double a = in.nextDouble();
+				double b = in.nextDouble();
 
-				d.listSensor.add(new Sensor(i+2, x, y, r));
+				d.listSensor.add(new Sensor(i+2, x, y, r, a, b));
 			}
 
 			return d;

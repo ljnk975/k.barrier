@@ -103,5 +103,25 @@ public class Point implements Cloneable, IDraw {
 	public Object clone() {
 		return new Point(this);
 	}
-	
+
+	public static Point rp(double r, double phi) {
+		return new Point(r*Math.cos(phi), r*Math.sin(phi));
+	}
+
+	public Point mul(double other) {
+		return new Point(this.x*other, this.y*other);
+	}
+
+	public Point add(Point other) {
+		return new Point(this.x+other.x, this.y+other.y);
+	}
+
+	public Point sub(Point other) {
+		return new Point(this.x-other.x, this.y-other.y);
+	}
+
+	public double dot(Point other) {
+		return this.x*other.x+this.y-other.y;
+	}
+
 }

@@ -2,6 +2,7 @@ package k.barrier.algorithm.ga;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import k.barrier.algorithm.Algorithm;
 import k.barrier.data.Data;
@@ -48,6 +49,12 @@ public class Individual {
 		this.genes = genes;
 	}
 
+	public Individual(Algorithm alg, int[] genes, int offset) {
+		this(alg);
+		random(alg, genes, offset);
+		this.genes = genes;
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder buff = new StringBuilder();
@@ -58,17 +65,25 @@ public class Individual {
 		return buff.toString();
 	}
 
-	public static Individual random(Algorithm alg) {
-		int[] genes = new int[alg.getInput().getListSensor().size()+alg.getInput().getK()];
+	public static void random(Algorithm alg, int[] genes, int offset) {
+		Data d = alg.getInput();
 
-		int nk = 0;
-		boolean[] selected = new boolean[alg.getInput().getListSensor().size()];
-		for (int gi = 0; gi < genes.length; gi++) {
+		int nk = 0, gi;
+		boolean[] selected = new boolean[d.getListSensor().size()];
+
+		for (gi = 0; gi < offset; gi++) {
+			if (genes[gi] == 1)
+				nk++;
+			else
+				selected[genes[gi]-2] = true;
+		}
+
+		for (; gi < genes.length; gi++) {
 			int next = -1;
 			while(true) {
-				next = RandomUtil.nextInt(alg.getInput().getListSensor().size()+1)+1;
+				next = RandomUtil.nextInt(d.getListSensor().size()+1)+1;
 				if (next == 1) {
-					if (nk < alg.getInput().getK()) {
+					if (nk < d.getK()) {
 						nk++;
 						break;
 					}
@@ -79,6 +94,65 @@ public class Individual {
 			}
 			genes[gi] = next;
 		}
+	}
+
+	public static void random2(Algorithm alg, int[] genes, int offset) {
+		Data d = alg.getInput();
+		WBG wbg = d.getWBG();
+
+		int nk = 0, s = 0, gi;
+		boolean[] selected = new boolean[d.getListSensor().size()];
+
+		for (gi = 0; gi < offset; gi++) {
+			if (genes[gi] == 1) {
+				s = 0;
+				nk++;
+			} else {
+				s = genes[gi];
+				selected[s-2] = true;
+			}
+		}
+
+		for (; gi < genes.length; gi++) {
+			if (nk < d.getK()) {
+				if (wbg.getWeight(s, 1) == 0) {
+					genes[gi] = 1;
+					nk++;
+					s = 0;
+					continue;
+				}
+				List<Node> list = wbg.getNodeIntersetList(s).stream().filter(s1 -> !selected[s1.index-2]).collect(Collectors.toList());
+				if (list.size() > 0) {
+					genes[gi] = list.get(RandomUtil.nextInt(list.size())).index;
+					s = genes[gi];
+					selected[s-2] = true;
+					continue;
+				}
+			}
+			int next = -1;
+			while(true) {
+				next = RandomUtil.nextInt(d.getListSensor().size()+1)+1;
+				if (next == 1) {
+					if (nk < d.getK()) {
+						nk++;
+						break;
+					}
+				} else if (!selected[next-2] && (nk == d.getK() || s == 0
+						|| wbg.getWeight(genes[gi-1], next)+wbg.getWeight(next, 1) < wbg.getWeight(genes[gi-1], 1))) {
+					selected[next-2] = true;
+					break;
+				}
+			}
+			genes[gi] = next; s = next == 1 ? 0 : next;
+		}
+	}
+
+	public static Individual random(Algorithm alg) {
+		Data d = alg.getInput();
+
+		int[] genes = new int[d.getListSensor().size()+d.getK()];
+
+		random(alg, genes, 0);
 
 		return new Individual(alg, genes);
 	}
@@ -147,7 +221,7 @@ public class Individual {
 		Data d = alg.getInput();
 		WBG wbg = d.getWBG();
 
-		this.barriers = new Barrier[d.getK()];
+		this.barriers = new Barrier[d.getK()]; this.fitness = 0;
 
 		for (int i = 0, j = 0; i < d.getK(); i++) {
 			List<Node> path = new ArrayList<>(); path.add(wbg.getNode(0));
@@ -158,27 +232,16 @@ public class Individual {
 
 			path.add(wbg.getNode(1)); j++;
 
-			barriers[i] = wbg.barrierFromPath(path);
-
-//			Barrier barrier = wbg.barrierFromPath(path);
-//
-//			System.out.print("Barrier "+i+": [");
-//			for (int j = 0; j < barrier.size()-1; j++)
-//				System.out.print(barrier.get(j).getIndex()+", ");
-//			System.out.println("1] Nm="+barrier.getLength());
-//
-//			barriers[i] = barrier;
+//			Barrier b1 = wbg.barrierFromPath(wbg.dijkstra(path));
+			Barrier b1 = wbg.barrierFromPath(path);
+			barriers[i] = b1;
+			fitness += b1.getLength();
 		}
 	}
 
 	public Individual callFitness() {
-		if (fitness < 0) {
+		if (fitness < 0)
 			obtainKBarrier();
-
-			fitness = 0;
-			for (Barrier b : barriers)
-				fitness += b.getLength();
-		}
 		return this;
 	}
 

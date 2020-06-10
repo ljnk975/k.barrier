@@ -19,6 +19,8 @@ public class GSA extends Algorithm {
 
 	@Override
 	protected void doAlgorithm() {
+		POPNUM = 2*d.getListSensor().size();
+
 		List<GSAIndividual> population = new ArrayList<GSAIndividual>();
 		for (int i = 0; i < POPNUM; i++)
 			population.add(GSAIndividual.random(this));

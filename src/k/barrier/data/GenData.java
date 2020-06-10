@@ -23,11 +23,11 @@ import k.barrier.model.Sensor;
  */
 public class GenData {
 
-    private static final int W = 1000;
+    private static final int W = 500;
     private static final int H = 1000;
 
-    private static final int[] k  = new int [] {10, 20, 50, 100};
-    private static final int[] ns = new int [] {5000, 2000, 1000, 500, 100};
+    private static final int[] k = new int [] {10, 20, 30, 40, 50};
+    private static final int[] ns = new int [] {100, 200, 500, 1000};
 
     private static final double l = 10;
 
@@ -46,7 +46,9 @@ public class GenData {
         for(int i = 0; i < n; i++) {
         	double x = rangeMin_x + (rangeMax_x - rangeMin_x) * rand.nextDouble();
         	double y = rangeMin_y + (rangeMax_y - rangeMin_y) * rand.nextDouble();
-        	Sensor s = new Sensor(0, x, y, r);
+        	double a = Math.PI * rand.nextDouble();
+        	double b = Math.PI * 2 * rand.nextDouble();
+        	Sensor s = new Sensor(0, x, y, r, a, b);
         	list.add(s);
         }
         return list;
@@ -56,8 +58,8 @@ public class GenData {
      * Generate data randomly
      * @return the generated data
      */
-    public Data randomData(int ns, int k) {
-    	return new Data(W, H, k, randomData(ns, l), l);
+    public Data randomData(int ns) {
+    	return new Data(W, H, 0, randomData(ns, l), l);
     }
 
 	/**
@@ -89,16 +91,16 @@ public class GenData {
         	f.mkdirs();
 
         try {
-        	Data d = randomData(ns, k);
+        	Data d = randomData(ns);
 
         	FileOutputStream fos = new FileOutputStream(path+"/"+fileName);
             PrintStream ps = new PrintStream(fos);
-            ps.println(d.getL() + " " + d.getH() + " " + d.getK() +" "+ d.getLr());
+            ps.println(d.getL() + " " + d.getH() + " " + d.getLr()+" " +k);
             List<Sensor> list = d.getListSensor();
             ps.println(list.size());
             for (int i = 0; i < list.size(); i++) {
                 Sensor s = list.get(i);
-                ps.println(s.getCircle().x + " " + s.getCircle().y + " " + " "+s.getR());
+                ps.println(s.getCircle().x + " " + s.getCircle().y + " " + s.getR() + " " + s.getAlpha() + " " + s.getBeta());
             }
             ps.close();
             fos.close();

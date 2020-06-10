@@ -41,6 +41,8 @@ public class Greedy extends Algorithm {
 			Barrier barrier = d.getWBG().directBarrier();
 			this.barriers[q] = barrier; this.Nm += barrier.getLength();
 		}
+		
+		d.getWBG().reset();
 
 		StringBuilder buff = new StringBuilder();
 		buff.append(Nm+" k=[");

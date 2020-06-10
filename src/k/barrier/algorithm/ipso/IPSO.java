@@ -39,6 +39,8 @@ public class IPSO extends Algorithm {
 		// Comparator
 		Comparator<Individual> compareFitness = (ind1, ind2) -> ind1.fitness-ind2.fitness;
 
+//		POPNUM = 2*d.getListSensor().size();
+
 		// Step 2: Encoding
 		List<Individual> population = new ArrayList<Individual>();
 		for (int i = 0; i < POPNUM; i++)

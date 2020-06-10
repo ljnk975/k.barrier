@@ -112,6 +112,8 @@ public abstract class Algorithm {
 		}
 	}
 
+	protected PrintStream metaPs;
+
 	/**
 	 * Solve proplem
 	 * @param odir  output directory
@@ -133,19 +135,21 @@ public abstract class Algorithm {
 			return;
 		}
 
-		this.timeElapse = System.currentTimeMillis(); // start time
-		this.doAlgorithm(); // do solve
-		this.timeElapse = System.currentTimeMillis()-this.timeElapse; // end time
-
 		PrintStream ps = null; // printstream
 		try {
+			metaPs = new PrintStream(new FileOutputStream(filename+".meta"));
+
+			this.timeElapse = System.currentTimeMillis(); // start time
+			this.doAlgorithm(); // do solve
+			this.timeElapse = System.currentTimeMillis()-this.timeElapse; // end time
+
 			ps = new PrintStream(new FileOutputStream(filename));
 
 			// Output
 			ps.println(d.getK());
 			ps.println(Nm);
 			ps.println(timeElapse);
-			
+
 			// Barrier
 			for(int i = 0; i < d.getK(); i++) {
 				ps.print("[");
@@ -163,6 +167,7 @@ public abstract class Algorithm {
 		} finally {
 			try {
 				ps.close();
+				metaPs.close();
 			} catch(Exception e) {
 			}
 		}
@@ -245,17 +250,18 @@ public abstract class Algorithm {
     		for(File f : dir.listFiles()) {
     			String name;
     			if(!f.isDirectory() && (name = f.getName()).endsWith(".txt")) {
-                    double[] kqO = new double[nRun];
+                    name = name.substring(0, name.lastIndexOf(".txt"));
+    				Data data = Data.readData(f);
+
+    				System.out.println("Data: "+name);
+
+    				double[] kqO = new double[nRun];
                     double kqAv = 0;
                     double timeAv = 0;
                     double doLC = 0;
                     double best = -1;
 
-                    name = name.substring(0, name.lastIndexOf(".txt"));
-    				Data data = Data.readData(f);
-
-    				System.out.println("Data: "+name);
-    				for(int r = 0; r < nRun; r++) {
+                    for(int r = 0; r < nRun; r++) {
     					alg.solve("./data/Result/", "Data_"+name+"_Run_"+r, data);
 
     					kqO[r] = alg.getNm();
@@ -274,7 +280,7 @@ public abstract class Algorithm {
                     else
                     	ps.println(name + "      " + best + "      " + kqAv + "      " + doLC + "      " + timeAv);
                     ps.println("-------------------------------------------------");
-    			}
+				}
     		}
         } catch(Exception e) {
         	e.printStackTrace();
